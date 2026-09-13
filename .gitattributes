@@ -1,0 +1,4 @@
+# Keep shell scripts LF — CRLF breaks zsh ($'...' literals, heredocs, shebangs).
+*.sh text eol=lf
+*.zsh text eol=lf
+*.py text eol=lf
