@@ -10,6 +10,10 @@ _zoracle_tool_sandbox() {
     printf 'Usage: sandbox <command>\n'
     return 1
   fi
+  if [[ "${ZORACLE_SANDBOX_ENABLED:-1}" == 0 ]]; then
+    printf 'ERROR: sandbox is disabled (ZORACLE_SANDBOX_ENABLED=0); enable sandbox in config, or use exec only if the command is trusted.\n'
+    return 1
+  fi
 
   if ! command -v docker >/dev/null 2>&1; then
     printf 'SANDBOX UNAVAILABLE: docker is not installed on this host.\n'

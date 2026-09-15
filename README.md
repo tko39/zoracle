@@ -92,6 +92,7 @@ ZORACLE_LLM_API_KEY="not-needed"
 | `ZORACLE_TOOL_OUTPUT_MAX_CHARS`         | `4000`             | Tool output truncated for the model       |
 | `ZORACLE_WORKSPACE_ROOT`                | `$PWD`             | Jail for file/exec/search tools           |
 | `ZORACLE_EXEC_ENABLED`                  | `0`                | Kill switch for the `exec` tool           |
+| `ZORACLE_SANDBOX_ENABLED`               | `1`                | Kill switch for the `sandbox` tool        |
 | `ZORACLE_SANDBOX_IMAGE`                 | `alpine:3.20`      | Image used by the `sandbox` tool          |
 
 ### Optional API keys

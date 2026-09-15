@@ -115,6 +115,10 @@ if command -v docker >/dev/null 2>&1; then
 else
   t_contains "sandbox degrades without docker" "$out" "SANDBOX UNAVAILABLE"
 fi
+ZORACLE_SANDBOX_ENABLED=0
+out=$(_zoracle_tool_sandbox "echo nope")
+t_contains "sandbox kill-switch works" "$out" "disabled"
+ZORACLE_SANDBOX_ENABLED=1
 
 # ---------- 6. router ----------
 printf '\n\033[1m[router]\033[0m\n'
@@ -137,6 +141,12 @@ schema=$(_zoracle_get_tools_json)
 ZORACLE_EXEC_ENABLED=1
 schema=$(_zoracle_get_tools_json)
 t_contains "schema includes exec when enabled" "$schema" "exec"
+ZORACLE_SANDBOX_ENABLED=0
+schema=$(_zoracle_get_tools_json)
+[[ "$schema" == *"sandbox"* ]] && { (( FAIL++ )); printf '  \033[1;31mFAIL\033[0m schema omits sandbox when disabled (found sandbox)\n'; } || { (( PASS++ )); printf '  \033[32mPASS\033[0m schema omits sandbox when disabled\n'; }
+ZORACLE_SANDBOX_ENABLED=1
+schema=$(_zoracle_get_tools_json)
+t_contains "schema includes sandbox when enabled" "$schema" "sandbox"
 out=$(_zoracle_execute_tool_json time '{"spec":"now"}')
 t_contains "json time now" "$out" "EPOCH:"
 out=$(_zoracle_execute_tool_json write_file '{"path":"json_test.txt","content":"hello world"}')

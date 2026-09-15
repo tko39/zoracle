@@ -7,12 +7,17 @@
 # of the corresponding tool_* function.
 #
 # "exec" is only advertised when ZORACLE_EXEC_ENABLED != 0 (kill switch).
+# "sandbox" is only advertised when ZORACLE_SANDBOX_ENABLED != 0 (kill switch).
 
 _zoracle_get_tools_json() {
   local exec_on=false
+  local sandbox_on=false
   [[ "${ZORACLE_EXEC_ENABLED:-0}" != 0 ]] && exec_on=true
-  jq -c --argjson exec_on "$exec_on" \
-    'map(select(.function.name != "exec" or $exec_on))' <<'EOF'
+  [[ "${ZORACLE_SANDBOX_ENABLED:-1}" != 0 ]] && sandbox_on=true
+  jq -c \
+    --argjson exec_on "$exec_on" \
+    --argjson sandbox_on "$sandbox_on" \
+    'map(select((.function.name != "exec" or $exec_on) and (.function.name != "sandbox" or $sandbox_on)))' <<'EOF'
 [
   {
     "type": "function",

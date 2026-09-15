@@ -28,6 +28,7 @@ typeset -g ZORACLE_FETCH_MAX_CHARS="${ZORACLE_FETCH_MAX_CHARS:-4000}"
 typeset -g ZORACLE_SEARCH_MAX_RESULTS="${ZORACLE_SEARCH_MAX_RESULTS:-50}"
 typeset -g ZORACLE_WORKSPACE_ROOT="${ZORACLE_WORKSPACE_ROOT:-}" # jail for file/exec/search tools
 typeset -g ZORACLE_EXEC_ENABLED="${ZORACLE_EXEC_ENABLED:-0}" # kill switch: 0 = exec disabled (default), 1 = enabled
+typeset -g ZORACLE_SANDBOX_ENABLED="${ZORACLE_SANDBOX_ENABLED:-1}" # kill switch: 0 = sandbox disabled, 1 = enabled (default)
 typeset -g ZORACLE_SANDBOX_IMAGE="${ZORACLE_SANDBOX_IMAGE:-alpine:3.20}"
 typeset -g ZORACLE_SANDBOX_NETWORK="${ZORACLE_SANDBOX_NETWORK:-none}"
 
