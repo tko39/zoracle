@@ -5,6 +5,6 @@
 # 
 # Or export the environment variables before `source $HOME/.zoracle/init.zsh`
 
-ZORACLE_LLM_BASE_URL="http://127.0.0.1:1919"
-ZORACLE_LLM_MODEL="minicpm5-2b"
-ZORACLE_LLM_API_KEY="not-needed"
+export ZORACLE_LLM_BASE_URL="http://127.0.0.1:1919"
+export ZORACLE_LLM_MODEL="minicpm5-2b"
+export ZORACLE_LLM_API_KEY="not-needed"
