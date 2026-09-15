@@ -63,11 +63,11 @@ if [[ -z "$PORT" ]]; then
   exit 1
 fi
 
+source "$ZORACLE_HOME/init.zsh" || exit 1
 export ZORACLE_LLM_BASE_URL="http://127.0.0.1:$PORT"
 export ZORACLE_LLM_MODEL="mock-model"
 export ZORACLE_LLM_API_KEY="test"
 
-source "$ZORACLE_HOME/init.zsh" || exit 1
 _zoracle_initialize_session
 
 reset_mock() {
@@ -89,6 +89,7 @@ req0=$(cat "$MOCK_STATE_DIR/request_0.json" 2>/dev/null)
 t_contains "request carries the tools key" "$req0" '"tools"'
 t_contains "request advertises the time tool" "$req0" '"name":"time"'
 t_contains "request advertises patch_file schema" "$req0" '"old_text"'
+t_contains "request carries the session model" "$req0" '"model":"mock-model"'
 
 last=$(jq -c 'map(select(.role=="assistant")) | last' <<<"$_ZORACLE_MESSAGES_JSON")
 t_contains "assistant message carries tool_calls" "$last" '"tool_calls"'

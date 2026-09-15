@@ -13,6 +13,7 @@ _zoracle_initialize_session() {
 
   typeset -g _ZORACLE_WORKSPACE_ROOT="${selected_root:A}"
   typeset -g _ZORACLE_MESSAGES_JSON='[]'
+  typeset -g _ZORACLE_LLM_MODEL="${ZORACLE_LLM_MODEL}"
   typeset -g _ZORACLE_LAST_REQUEST_EPOCH_SECONDS=0
   typeset -g _ZORACLE_SESSION_STARTED_AT
   typeset -g _ZORACLE_SYSTEM_PROMPT

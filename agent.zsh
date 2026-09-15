@@ -152,7 +152,7 @@ _zoracle_agent_interactive() {
 
   _agent_complete() {
     (( CURRENT == 1 )) || return 0
-    compadd -- /exit /quit /history /clear
+    compadd -- /clear /exit /history /model /quit
   }
 
   bindkey -N agent-interactive main
@@ -194,6 +194,14 @@ _zoracle_agent_interactive() {
       continue
     elif [ "$user_input" = "/history" ]; then
       _zoracle_jq . <<<"$_ZORACLE_MESSAGES_JSON"
+      continue
+    elif [[ "$user_input" == "/model" ]]; then
+      printf 'Current model: %s\n' "$_ZORACLE_LLM_MODEL"
+      printf 'Usage: /model <model name>\n'
+      continue
+    elif [[ "$user_input" =~ '^/model[[:space:]]+(.+)$' ]]; then
+      _ZORACLE_LLM_MODEL="$match[1]"
+      printf 'Model changed to: %s\n' "$_ZORACLE_LLM_MODEL"
       continue
     fi
 

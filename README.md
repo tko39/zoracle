@@ -23,7 +23,7 @@ zsh functions.
 - **Agent loop** — the agent keeps calling tools until the task is done
   (configurable iteration cap).
 - **Interactive REPL** — zsh-line-editor powered prompt with up/down history,
-  terminal tab-completion, `/clear`, `/history`, `/exit`.
+  terminal tab-completion, `/clear`, `/history`, `/model`, `/exit`.
 - **Or one-shot mode** — `zoracle "question"` from any shell.
 - **12+ tools** — web search, page reading, file read/write/patch, shell exec,
   sandboxed execution, code search, messaging, time grounding.
@@ -87,7 +87,7 @@ ZORACLE_LLM_API_KEY="not-needed"
 | Variable                                | Default            | Purpose                                   |
 |-----------------------------------------|--------------------|-------------------------------------------|
 | `ZORACLE_LLM_BASE_URL`                  | `http://127.0.0.1:1919` | LLM endpoint (OpenAI-compatible)      |
-| `ZORACLE_LLM_MODEL`                     | `minicpm5-2b`      | Model name sent in the request            |
+| `ZORACLE_LLM_MODEL`                     | `minicpm5-2b`      | Model name sent in the request (`/model` overrides per session) |
 | `ZORACLE_AGENT_MAX_ITERATIONS`          | `16`               | Cap on tool-call rounds                   |
 | `ZORACLE_TOOL_OUTPUT_MAX_CHARS`         | `4000`             | Tool output truncated for the model       |
 | `ZORACLE_WORKSPACE_ROOT`                | `$PWD`             | Jail for file/exec/search tools           |
@@ -137,6 +137,7 @@ You: list the *.zsh files and show the longest one
 | `/exit`, `/quit` | Leave the session             |
 | `/clear`     | Reset the conversation history    |
 | `/history`   | Dump the raw conversation JSON    |
+| `/model <name>` | Switch the LLM model mid-session |
 
 `Ctrl+D` on an empty line also exits; `Ctrl+C` interrupts gracefully; `Tab`
 completes the internal commands; up/down arrows walk your prompt history.

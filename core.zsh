@@ -61,7 +61,7 @@ _zoracle_llm_turn() {
   chunk_file=$(mktemp) || return 1
 
   jq -c \
-  --arg model "$ZORACLE_LLM_MODEL" \
+  --arg model "$_ZORACLE_LLM_MODEL" \
   --argjson max_output_tokens "$ZORACLE_LLM_MAX_OUTPUT_TOKENS" \
   --argjson no_reasoning "$no_reasoning" \
   --argjson tools "$tools_json" '
