@@ -51,7 +51,6 @@ _zoracle_tool_time 'blorp zum' >/dev/null 2>&1; t_fail "time with garbage spec" 
 # ---------- 2. File tools ----------
 printf '\n\033[1m[files]\033[0m\n'
 out=$(_zoracle_tool_write_file "notes.txt hello world\nsecond line")
-echo "TKTK $out"
 t_contains "write_file reports OK" "$out" "OK: wrote"
 out=$(_zoracle_tool_read_file "notes.txt")
 t_ok "read_file" $?

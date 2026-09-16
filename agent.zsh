@@ -197,6 +197,7 @@ _zoracle_agent_interactive() {
       continue
     elif [[ "$user_input" == "/model" ]]; then
       printf 'Current model: %s\n' "$_ZORACLE_LLM_MODEL"
+      _zoracle_llm_list_models
       printf 'Usage: /model <model name>\n'
       continue
     elif [[ "$user_input" =~ '^/model[[:space:]]+(.+)$' ]]; then

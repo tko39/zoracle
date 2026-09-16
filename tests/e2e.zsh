@@ -156,5 +156,14 @@ t_contains "recorded tool result is non-empty" "$tool_msg" '"content":"'
 tool_content=$(jq -r '[.[] | select(.role=="tool")] | last | .content' <<<"$_ZORACLE_MESSAGES_JSON")
 t_contains "recorded tool result carries real output" "$tool_content" "EPOCH:"
 
+# ---------- 4. /v1/models listing (mock GET) ----------
+printf '\n\033[1m[model list]\033[0m\n'
+out=$(_zoracle_llm_list_models); ml_rc=$?
+t_ok "model list fetches and parses" "$ml_rc"
+t_contains "model list shows an advertised model" "$out" "mock-model-a"
+t_contains "model list shows every model" "$out" "mock-model-b"
+t_contains "model list marks the current model" "$out" "<- current"
+t_contains "model list renders llama.cpp status" "$out" "[loaded]"
+
 printf '\n\033[1mResult: %d passed, %d failed\033[0m\n' "$PASS" "$FAIL"
 (( FAIL == 0 )) || exit 1

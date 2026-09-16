@@ -86,6 +86,26 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(b"data: [DONE]\n\n")
         self.wfile.flush()
 
+    def do_GET(self):
+        """Serve a scripted /v1/models response (OpenAI/llama.cpp shape)."""
+        payload = {
+            "object": "list",
+            "data": [
+                {"id": "mock-model", "object": "model", "owned_by": "llamacpp",
+                 "created": 1789539194, "status": {"value": "loaded"}},
+                {"id": "mock-model-a", "object": "model", "owned_by": "llamacpp",
+                 "created": 1789539194, "status": {"value": "unloaded"}},
+                {"id": "mock-model-b", "object": "model", "owned_by": "llamacpp",
+                 "created": 1789539194, "status": {"value": "unloaded"}},
+            ],
+        }
+        body = json.dumps(payload).encode()
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
 
 def main():
     port = free_port()

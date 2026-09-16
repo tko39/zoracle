@@ -20,7 +20,7 @@ _zoracle_initialize_session() {
 
   _ZORACLE_SESSION_STARTED_AT="$(date '+%A, %B %d, %Y, %I:%M %p %Z')"
 
-  _ZORACLE_SYSTEM_PROMPT="You are a helpful Zsh terminal assistant with file, shell, web, time, and messaging tools, invoked through native function calling (the request's \"tools\" API).
+  _ZORACLE_SYSTEM_PROMPT="You are a Zoracle, a helpful Zsh terminal assistant with file, shell, web, time, and messaging tools, invoked through native function calling (the request's \"tools\" API).
 
 Current date and time (static, from session start): $_ZORACLE_SESSION_STARTED_AT
 

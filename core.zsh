@@ -11,6 +11,74 @@ _zoracle_jq() {
   return "$rc"
 }
 
+_zoracle_llm_list_models() {
+  local url="${ZORACLE_LLM_BASE_URL%/}/v1/models"
+  local current="${_ZORACLE_LLM_MODEL:-${ZORACLE_LLM_MODEL:-}}"
+  local raw rc=0
+
+  raw=$(curl -sS --fail-with-body --ipv4 \
+        --connect-timeout "$ZORACLE_CONNECT_TIMEOUT_SECONDS" \
+        --max-time "$ZORACLE_REQUEST_TIMEOUT_SECONDS" \
+        "$url" \
+        -H 'Content-Type: application/json' \
+        -H "Authorization: Bearer $ZORACLE_LLM_API_KEY") || rc=$?
+
+  if (( rc != 0 )); then
+    printf '\033[1;31m[Model List]\033[0m could not reach %s (curl rc=%d). Is the server running?\n' \
+      "$url" "$rc" >&2
+    return 1
+  fi
+
+  local total rows
+  total=$(_zoracle_jq -r '
+    if type == "array" then length
+    elif (.data | type) == "array" then (.data | length)
+    else 0 end' <<<"$raw") 2>/dev/null
+
+  rows=$(_zoracle_jq -r '
+    if type == "array" then . else (.data // empty) end
+    | map(
+        if type == "object" then
+          ((.id // "") + "\t" + (.status.value? // ""))
+        elif type == "string" then
+          .
+        else empty end)
+    | .[]
+  ' <<<"$raw") || {
+    printf '\033[1;31m[Model List]\033[0m %s did not return a parseable JSON model list.\n' "$url" >&2
+    return 1
+  }
+
+  [[ -z "$rows" ]] && {
+    printf '\033[1;31m[Model List]\033[0m %s advertises no models.\n' "$url" >&2
+    return 1
+  }
+
+  [[ "$total" =~ ^[0-9]+$ ]] || total=0
+
+  local w=0 id mstatus n=0
+  while IFS=$'\t' read -r id mstatus; do
+    [[ -n "$id" ]] || continue
+    (( ${#id} > w )) && w=${#id}
+  done <<<"$rows"
+
+  printf '\n\033[1mAvailable models (%s)\033[0m\n' "$total"
+
+  while IFS=$'\t' read -r id mstatus; do
+    [[ -n "$id" ]] || continue
+    (( n++ ))
+
+    printf '  \033[1;36m%2d)\033[0m  %s' "$n" "${(r:$w:)id}"
+    [[ -n "$mstatus" ]] && printf '  \033[2m[%s]\033[0m' "$mstatus"
+    if [[ "$id" == "$current" ]]; then
+      printf '  \033[1;36m<- current\033[0m'
+    fi
+    printf '\n'
+  done <<<"$rows"
+
+  printf '\n'
+}
+
 
 _zoracle_llm_turn() {
   local no_reasoning=false

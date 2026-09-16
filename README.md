@@ -137,7 +137,7 @@ You: list the *.zsh files and show the longest one
 | `/exit`, `/quit` | Leave the session             |
 | `/clear`     | Reset the conversation history    |
 | `/history`   | Dump the raw conversation JSON    |
-| `/model <name>` | Switch the LLM model mid-session |
+| `/model [name]` | No name: list available models from `/v1/models`; with a name: switch the LLM model mid-session |
 
 `Ctrl+D` on an empty line also exits; `Ctrl+C` interrupts gracefully; `Tab`
 completes the internal commands; up/down arrows walk your prompt history.
