@@ -64,7 +64,7 @@ _zoracle_tool_read_file() {
 
   local total
   total=$(wc -l < "$p")
-  awk '{ printf "%6d| %s\n", NR, $0 }' "$p" | cut -c 1-500 | head -n "$max_lines"
+  awk '{ printf "%6d|%s\n", NR, $0 }' "$p" | cut -c 1-500 | head -n "$max_lines"
   if (( total > max_lines )); then
     printf '\n[showing lines 1-%d of %d total lines — raise the limit or use grep]\n' "$max_lines" "$total"
   fi
