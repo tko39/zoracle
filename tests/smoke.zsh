@@ -164,7 +164,62 @@ out=$(_zoracle_execute_tool_json write_file '{"path":"multi.py","content":"def f
 out=$(_zoracle_execute_tool_json patch_file '{"path":"multi.py","old_text":"return 1","new_text":"return 2"}')
 t_contains "json patch_file ok" "$out" "OK: patched"
 out=$(_zoracle_execute_tool_json read_file '{"path":"multi.py"}')
-t_contains "json patch applied" "$out" "return 2"
+out=$(_zoracle_execute_tool_json write_file '{"path":"multi2.py","content":"a = 1\nb = 2\nc = 3\n"}')
+out=$(_zoracle_execute_tool_json patch_file '{"path":"multi2.py","old_text":"a = 1\nb = 2\n","new_text":"a = 1\nb = 22\n"}')
+t_contains "json patch file multiline ok" "$out" "OK: patched"
+out=$(_zoracle_execute_tool_json read_file '{"path":"multi2.py"}')
+t_contains "json patch file multiline applied" "$out" "b = 22"
+
+# patch_file whitespace mismatch must still fail, but now with a diagnosis
+out=$(_zoracle_execute_tool_json patch_file '{"path":"multi2.py","old_text":" b = 22\n","new_text":" b = 9\n"}')
+t_fail "patch_file whitespace mismatch fails" $?
+t_contains "patch_file mismatch names a line" "$out" "closest match"
+t_contains "patch_file mismatch shows indent delta" "$out" "leading spaces differ"
+
+# patch_file on a CRLF file must work and must not flip line endings
+python - "$WORK/crlf.py" <<'PY'
+import sys
+open(sys.argv[1], "w", encoding="utf-8", newline="").write("a = 1\r\nb = 2\r\n")
+PY
+out=$(_zoracle_execute_tool_json patch_file '{"path":"crlf.py","old_text":"a = 1\n","new_text":"a = 10\n"}')
+t_contains "patch_file on CRLF file ok" "$out" "OK: patched"
+if python - "$WORK/crlf.py" <<'PY'
+import sys
+d = open(sys.argv[1], "rb").read()
+sys.exit(0 if (b"\r\n" in d and b"a = 10\r\n" in d and b"a = 1\r\n" not in d) else 1)
+PY
+then
+  (( PASS++ )); printf '  \033[32mPASS\033[0m patch_file preserved CRLF endings\n'
+else
+  (( FAIL++ )); printf '  \033[1;31mFAIL\033[0m patch_file did not preserve CRLF endings\n'
+fi
+
+# patch_file: new_text keeps its trailing newline (writing into an EOF without one)
+printf 'x = 1' > "$WORK/eof2.py"
+out=$(_zoracle_execute_tool_json patch_file '{"path":"eof2.py","old_text":"x = 1","new_text":"x = 1\n"}')
+t_contains "patch_file trailing-newline ok" "$out" "OK: patched"
+if [[ "$(tail -c 1 "$WORK/eof2.py" | od -An -tx1 | tr -d ' \n')" == 0a ]]; then
+  (( PASS++ )); printf '  \033[32mPASS\033[0m patch_file preserved trailing newline in new_text\n'
+else
+  (( FAIL++ )); printf '  \033[1;31mFAIL\033[0m patch_file dropped trailing newline in new_text\n'
+fi
+
+# append_file: content ending with newline must not add a blank line
+out=$(_zoracle_execute_tool_json write_file '{"path":"app2.txt","content":"first\n"}')
+out=$(_zoracle_execute_tool_json append_file '{"path":"app2.txt","content":"second\n"}')
+if [[ "$(wc -l < "$WORK/app2.txt")" == "2" ]]; then
+  (( PASS++ )); printf '  \033[32mPASS\033[0m append_file does not double newlines\n'
+else
+  (( FAIL++ )); printf '  \033[1;31mFAIL\033[0m append_file added a duplicate newline\n'
+fi
+
+# patch_file must clean up its staging temp dirs
+if [[ -z "$(find "$WORK" -name '.zoracle-patch.*' 2>/dev/null)" ]]; then
+  (( PASS++ )); printf '  \033[32mPASS\033[0m patch_file left no temp dirs\n'
+else
+  (( FAIL++ )); printf '  \033[1;31mFAIL\033[0m patch_file leaked temp dirs\n'
+fi
+
 out=$(_zoracle_execute_tool_json grep '{"pattern":"SECRET_TOKEN is here"}')
 t_contains "json grep pattern with spaces" "$out" "SECRET_TOKEN is here"
 out=$(_zoracle_execute_tool_json bogus_tool '{"x":1}')

@@ -115,21 +115,30 @@ _zoracle_execute_tool_json() {
       ;;
     write_file)
       local _ZORACLE_ARG_PATH _ZORACLE_ARG_CONTENT
+      local _zcap
       _ZORACLE_ARG_PATH=$(_zoracle_jq -r '.path // ""' <<<"$json_args")
-      _ZORACLE_ARG_CONTENT=$(_zoracle_jq -j '.content // ""' <<<"$json_args")
+      # $( ) strips trailing newlines, which would silently change exact
+      # content; append a "." sentinel inside the capture and remove it.
+      _zcap=$( { _zoracle_jq -j '.content // ""'; printf .; } <<<"$json_args" ) || _zcap='.'
+      _ZORACLE_ARG_CONTENT="${_zcap%?}"
       _zoracle_tool_write_file
       ;;
     append_file)
       local _ZORACLE_ARG_PATH _ZORACLE_ARG_CONTENT
+      local _zcap
       _ZORACLE_ARG_PATH=$(_zoracle_jq -r '.path // ""' <<<"$json_args")
-      _ZORACLE_ARG_CONTENT=$(_zoracle_jq -j '.content // ""' <<<"$json_args")
+      _zcap=$( { _zoracle_jq -j '.content // ""'; printf .; } <<<"$json_args" ) || _zcap='.'
+      _ZORACLE_ARG_CONTENT="${_zcap%?}"
       _zoracle_tool_append_file
       ;;
     patch_file)
       local _ZORACLE_ARG_PATH _ZORACLE_ARG_OLD_TEXT _ZORACLE_ARG_NEW_TEXT
+      local _zcap
       _ZORACLE_ARG_PATH=$(_zoracle_jq -r '.path // ""' <<<"$json_args")
-      _ZORACLE_ARG_OLD_TEXT=$(_zoracle_jq -j '.old_text // ""' <<<"$json_args")
-      _ZORACLE_ARG_NEW_TEXT=$(_zoracle_jq -j '.new_text // ""' <<<"$json_args")
+      _zcap=$( { _zoracle_jq -j '.old_text // ""'; printf .; } <<<"$json_args" ) || _zcap='.'
+      _ZORACLE_ARG_OLD_TEXT="${_zcap%?}"
+      _zcap=$( { _zoracle_jq -j '.new_text // ""'; printf .; } <<<"$json_args" ) || _zcap='.'
+      _ZORACLE_ARG_NEW_TEXT="${_zcap%?}"
       _zoracle_tool_patch_file
       ;;
     exec)

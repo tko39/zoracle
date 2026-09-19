@@ -136,12 +136,19 @@ _zoracle_tool_append_file() {
   if [[ -n "$(tail -c 1 -- "$p" 2>/dev/null)" ]]; then
     printf '\n' >> "$p"
   fi
-  if printf '%s\n' "$content" >> "$p"; then
-    printf 'OK: appended to %s (file now %d bytes)\n' "$p" "$(wc -c < "$p")"
+  # Append content as-is, ensuring exactly one trailing newline (the file
+  # should end with a newline) without doubling an existing one.
+  local arc=0
+  if [[ "$content" == *$'\n' ]]; then
+    printf '%s' "$content" >> "$p" || arc=$?
   else
+    printf '%s\n' "$content" >> "$p" || arc=$?
+  fi
+  if (( arc != 0 )); then
     printf 'ERROR: append failed: %s\n' "$p"
     return 1
   fi
+  printf 'OK: appended to %s (file now %d bytes)\n' "$p" "$(wc -c < "$p")"
 }
 
 _zoracle_tool_patch_file() {
@@ -174,33 +181,124 @@ _zoracle_tool_patch_file() {
   (( grc )) && { _zoracle_path_error "$raw" "$grc"; return 1; }
   [[ -f "$p" ]] || { printf 'ERROR: file not found: %s\n' "$p"; return 1; }
 
-  _ZORACLE_PATCH_FILE="$p" \
-  _ZORACLE_PATCH_OLD="$old_text" \
-  _ZORACLE_PATCH_NEW="$new_text" \
-  python - <<'PY'
-import os, sys
-p = os.environ["_ZORACLE_PATCH_FILE"]
-old = os.environ["_ZORACLE_PATCH_OLD"]
-new = os.environ["_ZORACLE_PATCH_NEW"]
+  # Pass <old>/<new> to Python through temp files: immune to Windows
+  # env-var size limits and newline munging, and keeps exact bytes intact.
+  local dir="${p:h}"
+  local tmpdir
+  tmpdir=$(mktemp -d "$dir/.zoracle-patch.XXXXXX" 2>/dev/null) \
+    || { printf 'ERROR: mktemp failed in %s\n' "$dir"; return 1; }
+  if ! printf '%s' "$old_text" > "$tmpdir/old" 2>/dev/null \
+     || ! printf '%s' "$new_text" > "$tmpdir/new" 2>/dev/null; then
+    rm -rf -- "$tmpdir"
+    printf 'ERROR: cannot stage patch text\n'
+    return 1
+  fi
+
+  python - "$p" "$tmpdir/old" "$tmpdir/new" <<'PY'
+import sys
+
+p, oldf, newf = sys.argv[1:4]
+
+
+def lead_spaces(s):
+    n = 0
+    while n < len(s) and s[n] == " ":
+        n += 1
+    return n
+
+
+def diagnose(norm, old):
+    """Best-effort explanation of why a literal match failed."""
+    old_lines = old.split("\n")
+    file_lines = norm.split("\n")
+    n = len(old_lines)
+    anchor = old_lines[0].strip()
+    starts = []
+    for i, ln in enumerate(file_lines):
+        match = (ln.strip() == anchor) if anchor else (ln == old_lines[0])
+        if match:
+            starts.append(i)
+            if len(starts) >= 5:
+                break
+    best = None  # (mismatches, start line, sample diffs)
+    for i in starts:
+        block = file_lines[i:i + n]
+        mism, sample = 0, []
+        for k in range(min(n, len(block))):
+            a, b = old_lines[k], block[k]
+            if a != b:
+                mism += 1
+                if len(sample) < 4:
+                    sample.append((k + 1, a, b))
+        if best is None or mism < best[0]:
+            best = (mism, i, sample)
+    if best is not None:
+        mism, i, sample = best
+        covered = min(n, len(file_lines[i:i + n]))
+        print("  closest match: file line %d (%d of %d line(s) differ exactly)"
+              % (i + 1, mism, covered))
+        for (k, a, b) in sample:
+            if a.lstrip(" ") == b.lstrip(" "):
+                print("    line %d: leading spaces differ: <old>=%d, file=%d"
+                      % (k, lead_spaces(a), lead_spaces(b)))
+                print("      <old> |" + "+" * lead_spaces(a) + a.lstrip(" ")[:80])
+                print("      file  |" + "+" * lead_spaces(b) + b.lstrip(" ")[:80])
+            elif a.rstrip() == b.rstrip():
+                print("    line %d: trailing whitespace differs" % k)
+                print("      <old> |" + a[:100] + "|")
+                print("      file  |" + b[:100] + "|")
+            else:
+                print("    line %d: text differs" % k)
+                print("      <old> |" + a[:100] + "|")
+                print("      file  |" + b[:100] + "|")
+    else:
+        print("  no file line matches even the first line of <old>.")
+    print("  patch_file replaces exact literal text only - every space, tab and newline counts.")
+    print("  retry with a smaller <old> chunk copied verbatim from the read_file output.")
+
+
 try:
-    with open(p, encoding="utf-8", errors="surrogateescape") as f:
-        data = f.read()
+    with open(oldf, "rb") as fh:
+        old = fh.read().decode("utf-8", "surrogateescape")
+    with open(newf, "rb") as fh:
+        new = fh.read().decode("utf-8", "surrogateescape")
+except OSError as e:
+    print("ERROR: cannot read staged patch text: %s" % e)
+    sys.exit(1)
+
+try:
+    with open(p, "r", encoding="utf-8", errors="surrogateescape", newline="") as fh:
+        data = fh.read()
 except OSError as e:
     print("ERROR: cannot read %s: %s" % (p, e))
     sys.exit(1)
-count = data.count(old)
+
+# Work on a single newline flavor, remember which one the file uses so
+# the write-back preserves it (avoids accidental LF<->CRLF conversion
+# when Python's os.linesep disagrees with the file's line endings).
+eol = "\r\n" if "\r\n" in data else "\n"
+norm = data.replace("\r\n", "\n")
+old_n = old.replace("\r\n", "\n")
+new_n = new.replace("\r\n", "\n")
+
+count = norm.count(old_n)
 if count == 0:
     print("ERROR: old text not found in file (must match literally and exactly)")
+    diagnose(norm, old_n)
     sys.exit(4)
-data = data.replace(old, new, 1)
+
+norm = norm.replace(old_n, new_n, 1)
+data = norm.replace("\n", eol)
+
 try:
-    with open(p, "w", encoding="utf-8", errors="surrogateescape") as f:
-        f.write(data)
+    with open(p, "w", encoding="utf-8", errors="surrogateescape", newline="") as fh:
+        fh.write(data)
 except OSError as e:
     print("ERROR: cannot write %s: %s" % (p, e))
     sys.exit(1)
 print("OK: patched first of %d occurrence(s) in %s" % (count, p))
 PY
   local prc=$?
+  rm -rf -- "$tmpdir" 2>/dev/null
   return "$prc"
 }

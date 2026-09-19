@@ -3,9 +3,13 @@
 _zoracle_jq() {
   local out rc
 
-  out=$(command jq "$@")
-  rc=$?
+  # $( ) strips trailing newlines, which would silently corrupt exact string
+  # values that truly end with one (patch_file old/new text, file content).
+  # Capture a "." sentinel after jq's output and drop it again, so those
+  # newlines survive; callers that don't care strip them on their own capture.
+  out=$( { command jq "$@"; rc=$?; printf .; } )
 
+  out="${out%?}"
   out="${out//$'\r'/}"
   printf '%s' "$out"
   return "$rc"
